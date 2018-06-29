@@ -2,7 +2,10 @@ import nodeResolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import babel from 'rollup-plugin-babel';
 import replace from 'rollup-plugin-replace';
-import uglify from 'rollup-plugin-uglify';
+// import uglify from 'rollup-plugin-uglify';
+// import { terser } from "rollup-plugin-terser";
+import compiler from '@ampproject/rollup-plugin-closure-compiler';
+
 import pkg from './package.json';
 
 const ensureArray = maybeArr =>
@@ -20,7 +23,7 @@ const makeExternalPredicate = externalArr => {
 };
 
 const createConfig = ({ output, browser = false, umd = false, env } = {}) => {
-  const min = env === 'production';
+  const min = true;
 
   return {
     input: 'src/index.js',
@@ -49,15 +52,16 @@ const createConfig = ({ output, browser = false, umd = false, env } = {}) => {
           }
         )
       ),
-      min &&
-        uglify({
-          compress: {
-            pure_getters: true,
-            unsafe: true,
-            unsafe_comps: true,
-            warnings: false
-          }
-        })
+      min && compiler({ module_resolution: 'NODE' })
+      // terser({
+      //   compress: {
+      //     pure_getters: true,
+      //     unsafe: true,
+      //     unsafe_comps: true,
+      //     warnings: false,
+      //   },
+      //   toplevel: true,
+      // })
     ].filter(Boolean),
     external: makeExternalPredicate(umd ? external : allExternal)
   };
@@ -89,10 +93,39 @@ const configs = {
   }
 };
 
-const buildTypes = Object.keys(configs);
-const { ROLLUP_BUILDS = buildTypes.join(',') } = process.env;
-const builds = ROLLUP_BUILDS.split(',');
+// const buildTypes = Object.keys(configs);
+// const { ROLLUP_BUILDS = buildTypes.join(',') } = process.env;
+// const builds = ROLLUP_BUILDS.split(',');
 
-export default buildTypes
-  .filter(type => builds.includes(type))
-  .map(type => createConfig(configs[type]));
+// export default buildTypes
+//   .filter(type => builds.includes(type))
+//   .map(type => createConfig(configs[type]));
+export default [
+  // createConfig({
+  //   output: [
+  //     { file: pkg.browser[pkg.main], format: 'cjs' },
+  //     { file: pkg.browser[pkg.module], format: 'esm' },
+  //   ]
+  // }),
+  createConfig({
+    // output: [
+    //   { file: pkg.main, format: 'cjs' },
+    //   { file: pkg.module, format: 'esm' },
+    // ],
+    output: [
+      { file: pkg.browser[pkg.main], format: 'cjs' },
+      { file: pkg.browser[pkg.module], format: 'esm' }
+    ],
+    browser: true
+  })
+  // createConfig({
+  //   output: { file: pkg.unpkg.replace(/\.min\.js$/, '.js'), format: 'umd' },
+  //   umd: true,
+  //   env: 'development'
+  // }),
+  // createConfig({
+  //   output: { file: pkg.unpkg, format: 'umd' },
+  //   umd: true,
+  //   env: 'production'
+  // }),
+];
