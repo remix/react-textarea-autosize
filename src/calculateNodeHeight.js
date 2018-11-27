@@ -66,7 +66,6 @@ export default function calculateNodeHeight(
   const nodeStyling = calculateNodeStyling(uiTextNode, uid, useCache);
 
   if (nodeStyling === null) {
-    hiddenTextarea.parentNode.removeChild(hiddenTextarea);
     return null;
   }
 
@@ -117,9 +116,8 @@ export default function calculateNodeHeight(
     height = Math.min(maxHeight, height);
   }
 
-  hiddenTextarea.parentNode.removeChild(hiddenTextarea);
   const rowCount = Math.floor(height / singleRowHeight);
-  
+
   return { height, minHeight, maxHeight, rowCount, valueRowCount };
 }
 
@@ -182,4 +180,15 @@ function calculateNodeStyling(node, uid, useCache = false) {
 
 export const purgeCache = uid => {
   delete computedStyleCache[uid];
+};
+
+export const cleanUpAfterLastElement = () => {
+  // If all of the textareas have been unmounted, remove the hidden element.
+  if (
+    isBrowser &&
+    hiddenTextarea.parentNode !== null &&
+    Object.keys(computedStyleCache).length === 0
+  ) {
+    hiddenTextarea.parentNode.removeChild(hiddenTextarea);
+  }
 };
